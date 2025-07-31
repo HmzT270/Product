@@ -6,8 +6,8 @@ import { Box, Typography, Grid, TextField, Autocomplete } from "@mui/material";
 import axios from "axios";
 
 const criticalRowClass = {
-  backgroundColor: "rgba(199,36,36,0.68) !important",
-  color: "#fff",
+  backgroundColor: "error.light",
+  color: "text.primary",
   fontWeight: "bold",
   animation: "critical-blink 1s linear infinite alternate",
 };
@@ -138,9 +138,9 @@ function ProductList() {
       flex: 1,
       minWidth: 70,
       renderCell: (params) => (
-        <span style={{ color: "#ffffff", fontWeight: "bold" }}>
+        <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
           {params.value}
-        </span>
+        </Box>
       ),
     },
     {
@@ -149,9 +149,9 @@ function ProductList() {
       flex: 1,
       minWidth: 90,
       renderCell: (params) => (
-        <span style={{ color: "#ffffff", fontWeight: "bold" }}>
+        <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
           {params.value}
-        </span>
+        </Box>
       ),
     },
     {
@@ -160,9 +160,9 @@ function ProductList() {
       flex: 2,
       minWidth: 130,
       renderCell: (params) => (
-        <span style={{ color: "#ffffff", fontWeight: "bold" }}>
+        <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
           {params.value}
-        </span>
+        </Box>
       ),
     },
     {
@@ -171,9 +171,9 @@ function ProductList() {
       flex: 2,
       minWidth: 130,
       renderCell: (params) => (
-        <span style={{ color: "#ffffff", fontWeight: "bold" }}>
+        <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
           {params.value || <i>Yok</i>}
-        </span>
+        </Box>
       ),
     },
     {
@@ -182,12 +182,12 @@ function ProductList() {
       flex: 1,
       minWidth: 100,
       renderCell: (params) => (
-        <span style={{ color: "#ffffff", fontWeight: "bold" }}>
+        <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
           {params.value}
           {params.row.quantity <= criticalLevel && filterType === "all" && (
             <span style={{ marginLeft: "8px", fontSize: 18 }}>⚠</span>
           )}
-        </span>
+        </Box>
       ),
     },
     {
@@ -196,9 +196,9 @@ function ProductList() {
       flex: 1,
       minWidth: 100,
       renderCell: (params) => (
-        <span style={{ color: "#ffffff", fontWeight: "bold" }}>
+        <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
           {params.value}
-        </span>
+        </Box>
       ),
     },
     {
@@ -207,9 +207,9 @@ function ProductList() {
       flex: 1,
       minWidth: 100,
       renderCell: (params) => (
-        <span style={{ color: "#ffffff", fontWeight: "bold" }}>
+        <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
           {params.value || <i>Yok</i>}
-        </span>
+        </Box>
       ),
     },
     {
@@ -218,9 +218,9 @@ function ProductList() {
   flex: 1,
   minWidth: 120,
   renderCell: (params) => (
-    <span style={{ color: "#ffffff", fontWeight: "bold" }}>
+    <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
       {params.value || <i>Bilinmiyor</i>}
-    </span>
+    </Box>
   ),
 },
     {
@@ -229,9 +229,9 @@ function ProductList() {
       flex: 2,
       minWidth: 150,
       renderCell: (params) => (
-        <span style={{ color: "#ffffff", fontWeight: "bold" }}>
+        <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
           {new Date(params.value).toLocaleString("tr-TR")}
-        </span>
+        </Box>
       ),
     },
   ];
@@ -244,7 +244,7 @@ function ProductList() {
 
       <Grid container spacing={0} sx={{ width: "100%", m: 0, p: 0 }}>
         <Grid sx={{ width: "100%", mt: 5 }}>
-          <Typography variant="h5" gutterBottom color="#fff" fontWeight={700}>
+          <Typography variant="h5" gutterBottom color="text.primary" fontWeight={700}>
             Ürün Listesi
           </Typography>
 
@@ -288,8 +288,8 @@ function ProductList() {
                 slotProps={{
                   paper: {
                     sx: {
-                      backgroundColor: "#21598b",
-                      color: "#fff",
+                      backgroundColor: "background.paper",
+                      color: "text.primary",
                     },
                   },
                 }}
@@ -300,21 +300,8 @@ function ProductList() {
                       key={key}
                       {...otherProps}
                       style={{
-                        backgroundColor: selected
-                          ? "#418acb"
-                          : props["aria-selected"] === "true"
-                          ? "#276aad"
-                          : "#21598b",
-                        color: "#fff",
+                        color: "text.primary",
                         fontSize: 15,
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "#276aad";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = selected
-                          ? "#418acb"
-                          : "#21598b";
                       }}
                     >
                       {option.name}
@@ -327,13 +314,9 @@ function ProductList() {
                     label="Kategori"
                     size="small"
                     sx={{
-                      input: { color: "#fff", fontSize: 15 },
-                      label: { color: "#fff", fontSize: 15 },
+                      input: { color: "text.primary", fontSize: 15 },
+                      label: { color: "text.primary", fontSize: 15 },
                       "& .MuiOutlinedInput-root": {
-                        "& fieldset": { borderColor: "#418acb" },
-                        "&:hover fieldset": { borderColor: "#fff" },
-                        "&.Mui-focused fieldset": { borderColor: "#418acb" },
-                        backgroundColor: "rgba(89,146,203,0.12)",
                         borderRadius: 1.5,
                         minHeight: 36,
                       },
@@ -360,7 +343,6 @@ function ProductList() {
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     fontSize: 15,
-                    backgroundColor: "rgba(89,146,203,0.12)",
                     borderRadius: 1.5,
                     p: "2px 6px",
                     height: 36,
@@ -372,8 +354,8 @@ function ProductList() {
                 slotProps={{
                   paper: {
                     sx: {
-                      backgroundColor: "#21598b",
-                      color: "#fff",
+                      backgroundColor: "background.paper",
+                      color: "text.primary",
                     },
                   },
                 }}
@@ -384,22 +366,10 @@ function ProductList() {
                       key={key} // key'i ayrı ver
                       {...otherProps} // diğer props'ları yay
                       style={{
-                        backgroundColor: selected
-                          ? "#418acb"
-                          : props["aria-selected"] === "true"
-                          ? "#276aad"
-                          : "#21598b",
-                        color: "#fff",
                         fontSize: 15,
                       }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "#276aad";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = selected
-                          ? "#418acb"
-                          : "#21598b";
-                      }}
+
+
                     >
                       {option.name}
                     </li>
@@ -411,13 +381,9 @@ function ProductList() {
                     label="Marka"
                     size="small"
                     sx={{
-                      input: { color: "#fff", fontSize: 15 },
-                      label: { color: "#fff", fontSize: 15 },
+                      input: { color: "text.primary", fontSize: 15 },
+                      label: { color: "text.primary", fontSize: 15 },
                       "& .MuiOutlinedInput-root": {
-                        "& fieldset": { borderColor: "#418acb" },
-                        "&:hover fieldset": { borderColor: "#fff" },
-                        "&.Mui-focused fieldset": { borderColor: "#418acb" },
-                        backgroundColor: "rgba(89,146,203,0.12)",
                         borderRadius: 1.5,
                         minHeight: 36,
                       },
@@ -448,7 +414,6 @@ function ProductList() {
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     fontSize: 15,
-                    backgroundColor: "rgba(89,146,203,0.12)",
                     borderRadius: 1.5,
                     p: "2px 6px",
                     height: 36,
@@ -460,8 +425,8 @@ function ProductList() {
                 slotProps={{
                   paper: {
                     sx: {
-                      backgroundColor: "#21598b",
-                      color: "#fff",
+                      backgroundColor: "background.paper",
+                      color: "text.primary",
                     },
                   },
                 }}
@@ -472,21 +437,8 @@ function ProductList() {
                       key={key ?? option.value}
                       {...otherProps}
                       style={{
-                        backgroundColor: selected
-                          ? "#418acb"
-                          : props["aria-selected"] === "true"
-                          ? "#276aad"
-                          : "#21598b",
-                        color: "#fff",
+                        color: "text.primary",
                         fontSize: 15,
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "#276aad";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = selected
-                          ? "#418acb"
-                          : "#21598b";
                       }}
                     >
                       {option.name}
@@ -499,13 +451,10 @@ function ProductList() {
                     label="Ürünleri Filtrele"
                     size="small"
                     sx={{
-                      input: { color: "#fff", fontSize: 15 },
-                      label: { color: "#fff", fontSize: 15 },
+                      input: { color: "text.primary", fontSize: 15 },
+                      label: { color: "text.primary", fontSize: 15 },
                       "& .MuiOutlinedInput-root": {
-                        "& fieldset": { borderColor: "#418acb" },
-                        "&:hover fieldset": { borderColor: "#fff" },
-                        "&.Mui-focused fieldset": { borderColor: "#418acb" },
-                        backgroundColor: "rgba(89,146,203,0.12)",
+
                         borderRadius: 1.5,
                         minHeight: 36,
                       },
@@ -546,7 +495,7 @@ function ProductList() {
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     fontSize: 15,
-                    backgroundColor: "rgba(89,146,203,0.12)",
+
                     borderRadius: 1.5,
                     p: "2px 6px",
                     height: 36,
@@ -558,8 +507,8 @@ function ProductList() {
                 slotProps={{
                   paper: {
                     sx: {
-                      backgroundColor: "#21598b",
-                      color: "#fff",
+                      backgroundColor: "background.paper",
+                      color: "text.primary",
                     },
                   },
                 }}
@@ -570,22 +519,11 @@ function ProductList() {
                       key={key ?? option.value} // key ekledik, yoksa option.value kullanılır
                       {...otherProps}
                       style={{
-                        backgroundColor: selected
-                          ? "#418acb"
-                          : props["aria-selected"] === "true"
-                          ? "#276aad"
-                          : "#21598b",
-                        color: "#fff",
+
+                        color: "text.primary",
                         fontSize: 15,
                       }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "#276aad";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = selected
-                          ? "#418acb"
-                          : "#21598b";
-                      }}
+
                     >
                       {option.name}
                     </li>
@@ -597,13 +535,10 @@ function ProductList() {
                     label="Sıralama"
                     size="small"
                     sx={{
-                      input: { color: "#fff", fontSize: 15 },
-                      label: { color: "#fff", fontSize: 15 },
+                      input: { color: "text.primary", fontSize: 15 },
+                      label: { color: "text.primary", fontSize: 15 },
                       "& .MuiOutlinedInput-root": {
-                        "& fieldset": { borderColor: "#418acb" },
-                        "&:hover fieldset": { borderColor: "#fff" },
-                        "&.Mui-focused fieldset": { borderColor: "#418acb" },
-                        backgroundColor: "rgba(89,146,203,0.12)",
+
                         borderRadius: 1.5,
                         minHeight: 36,
                       },
@@ -621,19 +556,19 @@ function ProductList() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               sx={{
-                input: { color: "#fff" },
-                label: { color: "#fff" },
+                input: { color: "text.primary" },
+                label: { color: "text.primary" },
                 "& .MuiOutlinedInput-root": {
                   "& fieldset": { borderColor: "#ccc" },
-                  "&:hover fieldset": { borderColor: "#fff" },
-                  "&.Mui-focused fieldset": { borderColor: "#418acb" },
+
+
                 },
               }}
             />
 
             {/* Kritik Seviye */}
             <Box display="flex" alignItems="center" gap={1}>
-              <Typography color="#fff" fontWeight={500}>
+              <Typography color="text.primary" fontWeight={500}>
                 Kritik Stok Seviyesi:
               </Typography>
               <TextField
@@ -653,11 +588,11 @@ function ProductList() {
                 }}
                 sx={{
                   width: 70,
-                  input: { color: "#fff", textAlign: "center" },
+                  input: { color: "text.primary", textAlign: "center" },
                   "& .MuiOutlinedInput-root": {
                     "& fieldset": { borderColor: "#ccc" },
-                    "&:hover fieldset": { borderColor: "#fff" },
-                    "&.Mui-focused fieldset": { borderColor: "#418acb" },
+
+
                   },
                 }}
                 InputProps={{ inputProps: { min: 0 } }}
@@ -671,7 +606,7 @@ function ProductList() {
               maxWidth: "100vw",
               height: { xs: 420, sm: 520, md: 620, lg: 525, xl: 733 },
               overflow: "auto",
-              background: "rgba(16,132,199,0.07)",
+              backgroundColor: "background.default",
               borderRadius: 2,
               boxShadow: 2,
               p: 0,
@@ -689,32 +624,25 @@ function ProductList() {
                 height: "100%",
                 border: 0,
                 backgroundColor: "transparent",
-                color: "#fff",
+                color: "text.primary",
                 fontSize: 16,
                 "& .critical-row": criticalRowClass,
                 "& .MuiDataGrid-columnHeaders": {
-                  backgroundColor: "#21598b",
+                  backgroundColor: "background.paper",
                 },
                 "& .MuiDataGrid-columnHeader": {
-                  backgroundColor: "#6baee8ff",
-                  color: "#fff",
+                  backgroundColor: "background.paper",
+                  color: "text.primary",
                   fontWeight: "bold",
                   fontSize: 18,
                   borderRight: "1px solid #4da7db33",
                 },
-                "& .MuiDataGrid-cell": {
-                  color: "#fff",
-                  fontWeight: "bold",
-                },
-                "& .MuiDataGrid-row:not(.critical-row):hover": {
-                  backgroundColor: "rgba(32, 158, 255, 0) !important",
-                },
-                "& .Mui-selected, & .Mui-selected:hover": {
-                  backgroundColor: "#1d5fae !important",
-                  color: "#fff",
-                },
+                "& .MuiDataGrid-cell": { color: "text.primary", fontWeight: "bold" },
+
+
+
                 "& .MuiTablePagination-root, & .MuiTablePagination-toolbar": {
-                  color: "#fff",
+                  color: "text.primary",
                 },
               }}
             />
