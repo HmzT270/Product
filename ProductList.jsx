@@ -1,656 +1,353 @@
 import React, { useEffect, useState } from "react";
-import { getAllCategories } from "../services/categoryService";
-import { getAllBrands } from "../services/brandService";
-import { DataGrid } from "@mui/x-data-grid";
-import { Box, Typography, Grid, TextField, Autocomplete } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Paper,
+  TextField,
+  Button,
+  Autocomplete,
+  Alert,
+  Grid,
+  Fade,
+} from "@mui/material";
+import {
+  getAllBrands,
+  addBrand,
+  deleteBrand,
+  renameBrand,
+} from "../services/brandService";
 import axios from "axios";
 
-const criticalRowClass = {
-  backgroundColor: "error.light",
+const labelSx = {
   color: "text.primary",
-  fontWeight: "bold",
-  animation: "critical-blink 1s linear infinite alternate",
+  "&.Mui-focused": { color: "text.primary" },
+  "&.MuiInputLabel-shrink": { color: "text.primary" },
 };
 
-const criticalRowStyle = `
-@keyframes critical-blink {
-  from { background-color: rgba(199,36,36,0.68); }
-  to { background-color: rgba(255,59,59,0.96); }
-}
-`;
-
-function ProductList() {
-  const productFilters = [
-    { value: "all", name: "Tüm Ürünler" },
-    { value: "critical", name: "Kritik Stoktaki Ürünler" },
-    { value: "outofstock", name: "Stokta Olmayan Ürünler" },
-  ];
-
-  const sortOptionsList = [
-    { value: "serialnumber_asc", name: "Sıra No (Artan)" },
-    { value: "serialnumber_desc", name: "Sıra No (Azalan)" },
-    { value: "name_asc", name: "Ürün Adı (A-Z)" },
-    { value: "name_desc", name: "Ürün Adı (Z-A)" },
-    { value: "quantity_asc", name: "Stok (Artan)" },
-    { value: "quantity_desc", name: "Stok (Azalan)" },
-    { value: "category_asc", name: "Kategori (A-Z)" },
-    { value: "category_desc", name: "Kategori (Z-A)" },
-    { value: "brand_asc", name: "Marka (A-Z)" },
-    { value: "brand_desc", name: "Marka (Z-A)" },
-    { value: "createdAt_desc", name: "Eklenme Tarihi (Azalan)" },
-    { value: "createdAt_asc", name: "Eklenme Tarihi (Artan)" },
-  ];
-
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [selectedCategories, setSelectedCategories] = useState([]); // Dizi!
+export default function BrandEdit() {
   const [brands, setBrands] = useState([]);
-  const [selectedBrands, setSelectedBrands] = useState([]);
-  const [filterType, setFilterType] = useState("all");
-  const [criticalLevel, setCriticalLevel] = useState(10);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortOption, setSortOption] = useState("serialnumber_asc");
+  const [addName, setAddName] = useState("");
+  const [deleteBrandValue, setDeleteBrandValue] = useState(null);
+  const [renameBrandValue, setRenameBrandValue] = useState(null);
+  const [newRename, setNewRename] = useState("");
 
-  const fetchInitialCriticalLevel = async () => {
-    try {
-      const res = await axios.get("http://localhost:5184/api/Product/Any");
-      if (res.data?.criticalStockLevel !== undefined) {
-        setCriticalLevel(res.data.criticalStockLevel);
-      }
-    } catch (err) {
-      console.error("Başlangıç kritik seviyesi alınamadı:", err);
-    }
+  const [addStatus, setAddStatus] = useState({ success: null, message: "" });
+  const [deleteStatus, setDeleteStatus] = useState({ success: null, message: "" });
+  const [renameStatus, setRenameStatus] = useState({ success: null, message: "" });
+
+  const [showAddStatus, setShowAddStatus] = useState(false);
+  const [showDeleteStatus, setShowDeleteStatus] = useState(false);
+  const [showRenameStatus, setShowRenameStatus] = useState(false);
+
+  const showTemporaryMessage = (setStatus, setShowStatus, newStatus) => {
+    setStatus(newStatus);
+    setShowStatus(true);
+    setTimeout(() => setShowStatus(false), 3000);
   };
 
-  const loadCategories = async () => {
-    const data = await getAllCategories();
-    setCategories(data);
-  };
-
-  const loadBrands = async () => {
+  const refreshBrands = async () => {
     const data = await getAllBrands();
     setBrands(data);
   };
 
-  const loadSortedProducts = async () => {
-    const [orderBy, direction] = sortOption.split("_");
+  useEffect(() => {
+    refreshBrands();
+  }, []);
+
+  const handleAdd = async () => {
+    if (!addName.trim()) {
+      showTemporaryMessage(setAddStatus, setShowAddStatus, {
+        success: false,
+        message: "Marka adı girin.",
+      });
+      return;
+    }
     try {
-      const res = await axios.get(
-        `http://localhost:5184/api/Product/Sorted?orderBy=${orderBy}&direction=${direction}`
-      );
-      setProducts(res.data);
-    } catch (err) {
-      console.error("Sıralı ürünler yüklenemedi:", err);
+      await addBrand(addName.trim());
+      showTemporaryMessage(setAddStatus, setShowAddStatus, {
+        success: true,
+        message: "Marka eklendi.",
+      });
+      setAddName("");
+      refreshBrands();
+    } catch {
+      showTemporaryMessage(setAddStatus, setShowAddStatus, {
+        success: false,
+        message: "Marka eklenemedi.",
+      });
     }
   };
 
-  useEffect(() => {
-    fetchInitialCriticalLevel();
-    loadCategories();
-    loadBrands();
-  }, []);
+  const handleDelete = async () => {
+    if (!deleteBrandValue) {
+      showTemporaryMessage(setDeleteStatus, setShowDeleteStatus, {
+        success: false,
+        message: "Silinecek markayı seçin.",
+      });
+      return;
+    }
 
-  useEffect(() => {
-    loadSortedProducts();
-  }, [sortOption]);
+    try {
+      // Önce markaya ait ürün var mı kontrol et
+      const res = await axios.get(
+        `http://localhost:5184/api/Product/Brand/${deleteBrandValue.brandId}`
+      );
 
-  const rows = products
-    .filter((row) => {
-      const matchesFilter =
-        filterType === "all"
-          ? true
-          : filterType === "critical"
-          ? row.quantity <= criticalLevel
-          : row.quantity === 0;
+      if (res.data && res.data.length > 0) {
+        // Ürün varsa özel uyarıyı göster ve çık
+        setDeleteStatus({
+          success: false,
+          message: "Bu markaya ait ürünler bulunduğu için silinemez!",
+        });
+        setShowDeleteStatus(true);
+        setTimeout(() => setShowDeleteStatus(false), 3000);
+        return; // ❗ burada return ederek catch'e girmesini engelliyoruz
+      }
 
-      const matchesSearch = row.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
+      // Ürün yoksa sil
+      await deleteBrand(deleteBrandValue.brandId);
 
-      const matchesBrand =
-        selectedBrands.length === 0
-          ? true
-          : selectedBrands.some(
-              (brand) => String(brand.brandId) === String(row.brandId)
-            );
+      showTemporaryMessage(setDeleteStatus, setShowDeleteStatus, {
+        success: true,
+        message: "Marka silindi.",
+      });
+      setDeleteBrandValue(null);
+      refreshBrands();
+    } catch {
+      showTemporaryMessage(setDeleteStatus, setShowDeleteStatus, {
+        success: false,
+        message: "Marka silinemedi",
+      });
+    }
+  };
 
-      const matchesCategory =
-        selectedCategories.length === 0
-          ? true
-          : selectedCategories.some((cat) => cat.categoryId === row.categoryId);
-
-      return matchesFilter && matchesSearch && matchesBrand && matchesCategory;
-    })
-    .map((product, index) => ({
-      ...product,
-      id: product.productId,
-    }));
-
-  const getRowClassName = (params) =>
-    filterType === "all" && params.row.quantity <= criticalLevel
-      ? "critical-row"
-      : "";
-
-  const columns = [
-    {
-      field: "serialNumber",
-      headerName: "Sıra No",
-      flex: 1,
-      minWidth: 70,
-      renderCell: (params) => (
-        <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
-          {params.value}
-        </Box>
-      ),
-    },
-    {
-      field: "productId",
-      headerName: "ID",
-      flex: 1,
-      minWidth: 90,
-      renderCell: (params) => (
-        <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
-          {params.value}
-        </Box>
-      ),
-    },
-    {
-      field: "name",
-      headerName: "Ürün Adı",
-      flex: 2,
-      minWidth: 130,
-      renderCell: (params) => (
-        <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
-          {params.value}
-        </Box>
-      ),
-    },
-    {
-      field: "description",
-      headerName: "Açıklama",
-      flex: 2,
-      minWidth: 130,
-      renderCell: (params) => (
-        <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
-          {params.value || <i>Yok</i>}
-        </Box>
-      ),
-    },
-    {
-      field: "quantity",
-      headerName: "Stok",
-      flex: 1,
-      minWidth: 100,
-      renderCell: (params) => (
-        <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
-          {params.value}
-          {params.row.quantity <= criticalLevel && filterType === "all" && (
-            <span style={{ marginLeft: "8px", fontSize: 18 }}>⚠</span>
-          )}
-        </Box>
-      ),
-    },
-    {
-      field: "category",
-      headerName: "Kategori",
-      flex: 1,
-      minWidth: 100,
-      renderCell: (params) => (
-        <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
-          {params.value}
-        </Box>
-      ),
-    },
-    {
-      field: "brand",
-      headerName: "Marka",
-      flex: 1,
-      minWidth: 100,
-      renderCell: (params) => (
-        <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
-          {params.value || <i>Yok</i>}
-        </Box>
-      ),
-    },
-    {
-  field: "createdBy",
-  headerName: "Ekleyen",
-  flex: 1,
-  minWidth: 120,
-  renderCell: (params) => (
-    <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
-      {params.value || <i>Bilinmiyor</i>}
-    </Box>
-  ),
-},
-    {
-      field: "createdAt",
-      headerName: "Eklenme Tarihi",
-      flex: 2,
-      minWidth: 150,
-      renderCell: (params) => (
-        <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
-          {new Date(params.value).toLocaleString("tr-TR")}
-        </Box>
-      ),
-    },
-  ];
+  const handleRename = async () => {
+    if (!renameBrandValue || !newRename.trim()) {
+      showTemporaryMessage(setRenameStatus, setShowRenameStatus, {
+        success: false,
+        message: "Marka ve yeni adı seçin.",
+      });
+      return;
+    }
+    try {
+      await renameBrand(renameBrandValue.brandId, newRename.trim());
+      showTemporaryMessage(setRenameStatus, setShowRenameStatus, {
+        success: true,
+        message: "Marka adı değiştirildi.",
+      });
+      setRenameBrandValue(null);
+      setNewRename("");
+      refreshBrands();
+    } catch {
+      showTemporaryMessage(setRenameStatus, setShowRenameStatus, {
+        success: false,
+        message: "Marka adı değiştirilemedi.",
+      });
+    }
+  };
 
   return (
     <Box
-      sx={{ width: "100%", maxWidth: "100vw", minHeight: "92vh", m: 0, p: 0 }}
+      sx={{
+        width: "100%",
+        minHeight: "50vh",
+        py: 10,
+        px: { xs: 0, md: 4 },
+        bgcolor: "transparent",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+      }}
     >
-      <style>{criticalRowStyle}</style>
-
-      <Grid container spacing={0} sx={{ width: "100%", m: 0, p: 0 }}>
-        <Grid sx={{ width: "100%", mt: 5 }}>
-          <Typography variant="h5" gutterBottom color="text.primary" fontWeight={700}>
-            Ürün Listesi
-          </Typography>
-
-          <Box
+      <Grid rowSpacing={3} container spacing={6} justifyContent="center">
+        {/* Marka Ekle */}
+        <Grid>
+          <Paper
             sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 3,
-              mb: 2,
-              alignItems: "center",
-            }}
-          >
-            {/* Kategori */}
-            <div style={{ minWidth: 170, maxWidth: 210 }}>
-              <Autocomplete
-                multiple
-                size="small"
-                options={categories
-                  .slice()
-                  .sort((a, b) => a.name.localeCompare(b.name))}
-                getOptionLabel={(option) => option.name}
-                value={selectedCategories}
-                onChange={(event, value) => setSelectedCategories(value)}
-                isOptionEqualToValue={(opt, val) =>
-                  opt.categoryId === val.categoryId
-                }
-                disableCloseOnSelect
-                renderTags={() => null}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    fontSize: 15,
-                    backgroundColor: "rgba(89,146,203,0.12)",
-                    borderRadius: 1.5,
-                    p: "2px 6px",
-                    height: 36,
-                    minHeight: 36,
-                  },
-                  minWidth: 170,
-                  maxWidth: 210,
-                }}
-                slotProps={{
-                  paper: {
-                    sx: {
-                      backgroundColor: "background.paper",
-                      color: "text.primary",
-                    },
-                  },
-                }}
-                renderOption={(props, option, { selected }) => {
-                  const { key, ...otherProps } = props; // key'i ayrı al, diğerlerini spread et
-                  return (
-                    <li
-                      key={key}
-                      {...otherProps}
-                      style={{
-                        color: "text.primary",
-                        fontSize: 15,
-                      }}
-                    >
-                      {option.name}
-                    </li>
-                  );
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Kategori"
-                    size="small"
-                    sx={{
-                      input: { color: "text.primary", fontSize: 15 },
-                      label: { color: "text.primary", fontSize: 15 },
-                      "& .MuiOutlinedInput-root": {
-                        borderRadius: 1.5,
-                        minHeight: 36,
-                      },
-                    }}
-                  />
-                )}
-              />
-            </div>
-
-            {/* Marka */}
-            <div style={{ minWidth: 170, maxWidth: 210 }}>
-              <Autocomplete
-                multiple
-                size="small"
-                options={brands
-                  .slice()
-                  .sort((a, b) => a.name.localeCompare(b.name))}
-                getOptionLabel={(option) => option.name}
-                value={selectedBrands}
-                onChange={(event, value) => setSelectedBrands(value)}
-                isOptionEqualToValue={(opt, val) => opt.brandId === val.brandId}
-                disableCloseOnSelect
-                renderTags={() => null}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    fontSize: 15,
-                    borderRadius: 1.5,
-                    p: "2px 6px",
-                    height: 36,
-                    minHeight: 36,
-                  },
-                  minWidth: 170,
-                  maxWidth: 210,
-                }}
-                slotProps={{
-                  paper: {
-                    sx: {
-                      backgroundColor: "background.paper",
-                      color: "text.primary",
-                    },
-                  },
-                }}
-                renderOption={(props, option, { selected }) => {
-                  const { key, ...otherProps } = props; // key'i ayır
-                  return (
-                    <li
-                      key={key} // key'i ayrı ver
-                      {...otherProps} // diğer props'ları yay
-                      style={{
-                        fontSize: 15,
-                      }}
-
-
-                    >
-                      {option.name}
-                    </li>
-                  );
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Marka"
-                    size="small"
-                    sx={{
-                      input: { color: "text.primary", fontSize: 15 },
-                      label: { color: "text.primary", fontSize: 15 },
-                      "& .MuiOutlinedInput-root": {
-                        borderRadius: 1.5,
-                        minHeight: 36,
-                      },
-                    }}
-                  />
-                )}
-              />
-            </div>
-
-            {/* Filtre */}
-            <div style={{ minWidth: 170, maxWidth: 210 }}>
-              <Autocomplete
-                options={[
-                  { value: "all", name: "Tüm Ürünler" },
-                  { value: "critical", name: "Kritik Stoktaki Ürünler" },
-                  { value: "outofstock", name: "Stokta Olmayan Ürünler" },
-                ]}
-                getOptionLabel={(option) => option.name}
-                value={
-                  productFilters.find((opt) => opt.value === filterType) || null
-                }
-                onChange={(event, value) => {
-                  if (value) setFilterType(value.value);
-                }}
-                isOptionEqualToValue={(opt, val) => opt.value === val.value}
-                disableClearable
-                size="small"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    fontSize: 15,
-                    borderRadius: 1.5,
-                    p: "2px 6px",
-                    height: 36,
-                    minHeight: 36,
-                  },
-                  minWidth: 170,
-                  maxWidth: 210,
-                }}
-                slotProps={{
-                  paper: {
-                    sx: {
-                      backgroundColor: "background.paper",
-                      color: "text.primary",
-                    },
-                  },
-                }}
-                renderOption={(props, option, { selected }) => {
-                  const { key, ...otherProps } = props;
-                  return (
-                    <li
-                      key={key ?? option.value}
-                      {...otherProps}
-                      style={{
-                        color: "text.primary",
-                        fontSize: 15,
-                      }}
-                    >
-                      {option.name}
-                    </li>
-                  );
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Ürünleri Filtrele"
-                    size="small"
-                    sx={{
-                      input: { color: "text.primary", fontSize: 15 },
-                      label: { color: "text.primary", fontSize: 15 },
-                      "& .MuiOutlinedInput-root": {
-
-                        borderRadius: 1.5,
-                        minHeight: 36,
-                      },
-                    }}
-                  />
-                )}
-              />
-            </div>
-
-            {/* Sıralama */}
-            <div style={{ minWidth: 170, maxWidth: 210 }}>
-              <Autocomplete
-                options={[
-                  { value: "serialnumber_asc", name: "Sıra No (Artan)" },
-                  { value: "serialnumber_desc", name: "Sıra No (Azalan)" },
-                  { value: "name_asc", name: "Ürün Adı (A-Z)" },
-                  { value: "name_desc", name: "Ürün Adı (Z-A)" },
-                  { value: "quantity_asc", name: "Stok (Artan)" },
-                  { value: "quantity_desc", name: "Stok (Azalan)" },
-                  { value: "category_asc", name: "Kategori (A-Z)" },
-                  { value: "category_desc", name: "Kategori (Z-A)" },
-                  { value: "brand_asc", name: "Marka (A-Z)" },
-                  { value: "brand_desc", name: "Marka (Z-A)" },
-                  { value: "createdAt_desc", name: "Eklenme Tarihi (Azalan)" },
-                  { value: "createdAt_asc", name: "Eklenme Tarihi (Artan)" },
-                ]}
-                getOptionLabel={(option) => option.name}
-                value={
-                  sortOptionsList.find((opt) => opt.value === sortOption) ||
-                  null
-                }
-                onChange={(event, value) => {
-                  if (value) setSortOption(value.value);
-                }}
-                isOptionEqualToValue={(opt, val) => opt.value === val.value}
-                disableClearable
-                size="small"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    fontSize: 15,
-
-                    borderRadius: 1.5,
-                    p: "2px 6px",
-                    height: 36,
-                    minHeight: 36,
-                  },
-                  minWidth: 170,
-                  maxWidth: 210,
-                }}
-                slotProps={{
-                  paper: {
-                    sx: {
-                      backgroundColor: "background.paper",
-                      color: "text.primary",
-                    },
-                  },
-                }}
-                renderOption={(props, option, { selected }) => {
-                  const { key, ...otherProps } = props;
-                  return (
-                    <li
-                      key={key ?? option.value} // key ekledik, yoksa option.value kullanılır
-                      {...otherProps}
-                      style={{
-
-                        color: "text.primary",
-                        fontSize: 15,
-                      }}
-
-                    >
-                      {option.name}
-                    </li>
-                  );
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Sıralama"
-                    size="small"
-                    sx={{
-                      input: { color: "text.primary", fontSize: 15 },
-                      label: { color: "text.primary", fontSize: 15 },
-                      "& .MuiOutlinedInput-root": {
-
-                        borderRadius: 1.5,
-                        minHeight: 36,
-                      },
-                    }}
-                  />
-                )}
-              />
-            </div>
-
-            {/* Arama */}
-            <TextField
-              label="Ürün Ara"
-              variant="outlined"
-              size="small"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              sx={{
-                input: { color: "text.primary" },
-                label: { color: "text.primary" },
-                "& .MuiOutlinedInput-root": {
-                  "& fieldset": { borderColor: "#ccc" },
-
-
-                },
-              }}
-            />
-
-            {/* Kritik Seviye */}
-            <Box display="flex" alignItems="center" gap={1}>
-              <Typography color="text.primary" fontWeight={500}>
-                Kritik Stok Seviyesi:
-              </Typography>
-              <TextField
-                type="number"
-                size="small"
-                value={criticalLevel}
-                onChange={async (e) => {
-                  const value = Number(e.target.value);
-                  setCriticalLevel(value);
-                  try {
-                    await axios.put(
-                      `http://localhost:5184/api/Product/UpdateAllCriticalStockLevel/${value}`
-                    );
-                  } catch (err) {
-                    console.error("Kritik stok seviyesi güncellenemedi:", err);
-                  }
-                }}
-                sx={{
-                  width: 70,
-                  input: { color: "text.primary", textAlign: "center" },
-                  "& .MuiOutlinedInput-root": {
-                    "& fieldset": { borderColor: "#ccc" },
-
-
-                  },
-                }}
-                InputProps={{ inputProps: { min: 0 } }}
-              />
-            </Box>
-          </Box>
-
-          <Box
-            sx={{
-              width: "100%",
-              maxWidth: "100vw",
-              height: { xs: 420, sm: 520, md: 620, lg: 525, xl: 733 },
-              overflow: "auto",
-              backgroundColor: "background.default",
-              borderRadius: 2,
+              width: 340,
+              height: 203,
+              p: 3,
+              bgcolor: "background.default",
+              color: "text.primary",
+              borderRadius: 3,
               boxShadow: 2,
-              p: 0,
             }}
           >
-            <DataGrid
-              rows={rows}
-              columns={columns}
-              pageSize={10}
-              rowsPerPageOptions={[10, 20, 50, 100]}
-              getRowClassName={getRowClassName}
-              autoHeight={false}
-              sx={{
-                width: "100%",
-                height: "100%",
-                border: 0,
-                backgroundColor: "transparent",
-                color: "text.primary",
-                fontSize: 16,
-                "& .critical-row": criticalRowClass,
-                "& .MuiDataGrid-columnHeaders": {
-                  backgroundColor: "background.paper",
-                },
-                "& .MuiDataGrid-columnHeader": {
-                  backgroundColor: "background.paper",
-                  color: "text.primary",
-                  fontWeight: "bold",
-                  fontSize: 18,
-                  borderRight: "1px solid #4da7db33",
-                },
-                "& .MuiDataGrid-cell": { color: "text.primary", fontWeight: "bold" },
-
-
-
-                "& .MuiTablePagination-root, & .MuiTablePagination-toolbar": {
-                  color: "text.primary",
-                },
-              }}
+            <Typography variant="subtitle1" fontWeight={600} mb={2}>
+              Marka Ekle
+            </Typography>
+            <TextField
+              label="Marka Adı"
+              value={addName}
+              onChange={(e) => setAddName(e.target.value)}
+              fullWidth
+              InputLabelProps={{ sx: labelSx }}
+              inputProps={{ style: { color: "text.primary" } }}
+              sx={{ mb: 2 }}
             />
-          </Box>
+            <Button
+              variant="contained"
+              onClick={handleAdd}
+              fullWidth
+              sx={{
+                backgroundColor: "rgba(68, 129, 160, 0.5)",
+                color: "#fff",
+                "&:hover": { backgroundColor: "rgba(18, 93, 131, 0.5)" },
+              }}
+            >
+              Ekle
+            </Button>
+          </Paper>
+          <Grid sx={{ mt: 2, height: 40 }}>
+            <Fade in={showAddStatus} timeout={1500}>
+              <Box sx={{ width: "100%" }}>
+                {addStatus.message && (
+                  <Alert severity={addStatus.success ? "success" : "error"}>
+                    {addStatus.message}
+                  </Alert>
+                )}
+              </Box>
+            </Fade>
+          </Grid>
+        </Grid>
+
+        {/* Marka Sil */}
+        <Grid>
+          <Paper
+            sx={{
+              width: 340,
+              minHeight: 150,
+              p: 3,
+              bgcolor: "background.default",
+              color: "text.primary",
+              borderRadius: 3,
+              boxShadow: 2,
+            }}
+          >
+            <Typography variant="subtitle1" fontWeight={600} mb={2}>
+              Marka Sil
+            </Typography>
+            <Autocomplete
+              options={brands}
+              getOptionLabel={(option) => option.name}
+              value={deleteBrandValue}
+              onChange={(e, val) => setDeleteBrandValue(val)}
+              componentsProps={{
+                paper: { sx: { bgcolor: "background.paper", color: "text.primary" } },
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Marka Seç"
+                  fullWidth
+                  InputLabelProps={{ sx: labelSx }}
+                  inputProps={{
+                    ...params.inputProps,
+                    style: { color: "text.primary" },
+                  }}
+                  sx={{ mb: 2 }}
+                />
+              )}
+            />
+            <Button
+              variant="contained"
+              onClick={handleDelete}
+              fullWidth
+              sx={{
+                backgroundColor: "rgba(199,36,36,0.5)",
+                color: "#fff",
+                "&:hover": { backgroundColor: "rgba(255,59,59,0.6)" },
+              }}
+            >
+              Sil
+            </Button>
+          </Paper>
+          <Grid sx={{ mt: 2, height: 40 }}>
+            <Fade in={showDeleteStatus} timeout={1500}>
+              <Box sx={{ width: "100%" }}>
+                {deleteStatus.message && (
+                  <Alert severity={deleteStatus.success ? "success" : "error"}>
+                    {deleteStatus.message}
+                  </Alert>
+                )}
+              </Box>
+            </Fade>
+          </Grid>
+        </Grid>
+
+        {/* Marka Adı Değiştir */}
+        <Grid>
+          <Paper
+            sx={{
+              width: 340,
+              height: 270,
+              p: 3,
+              bgcolor: "background.default",
+              color: "text.primary",
+              borderRadius: 3,
+              boxShadow: 2,
+            }}
+          >
+            <Typography variant="subtitle1" fontWeight={600} mb={2}>
+              Marka Adı Değiştir
+            </Typography>
+            <Autocomplete
+              options={brands}
+              getOptionLabel={(option) => option.name}
+              value={renameBrandValue}
+              onChange={(e, val) => setRenameBrandValue(val)}
+              componentsProps={{
+                paper: { sx: { bgcolor: "background.paper", color: "text.primary" } },
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Marka Seç"
+                  fullWidth
+                  InputLabelProps={{ sx: labelSx }}
+                  inputProps={{
+                    ...params.inputProps,
+                    style: { color: "text.primary" },
+                  }}
+                  sx={{ mb: 2 }}
+                />
+              )}
+            />
+            <TextField
+              label="Yeni Ad"
+              value={newRename}
+              onChange={(e) => setNewRename(e.target.value)}
+              fullWidth
+              InputLabelProps={{ sx: labelSx }}
+              inputProps={{ style: { color: "text.primary" } }}
+              sx={{ mb: 2 }}
+            />
+            <Button
+              variant="contained"
+              onClick={handleRename}
+              fullWidth
+              sx={{
+                backgroundColor: "rgba(68, 129, 160, 0.5)",
+                color: "#fff",
+                "&:hover": { backgroundColor: "rgba(18, 93, 131, 0.5)" },
+              }}
+            >
+              Değiştir
+            </Button>
+          </Paper>
+          <Grid sx={{ mt: 2, height: 40 }}>
+            <Fade in={showRenameStatus} timeout={1500}>
+              <Box sx={{ width: "100%" }}>
+                {renameStatus.message && (
+                  <Alert severity={renameStatus.success ? "success" : "error"}>
+                    {renameStatus.message}
+                  </Alert>
+                )}
+              </Box>
+            </Fade>
+          </Grid>
         </Grid>
       </Grid>
     </Box>
   );
 }
-
-export default ProductList;
