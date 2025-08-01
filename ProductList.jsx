@@ -18,6 +18,8 @@ import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import myFont from "../fonts/OpenSansLight.js";
+import SimpleBar from "simplebar-react";
+import "simplebar-react/dist/simplebar.min.css";
 
 const criticalRowClass = {
   backgroundColor: "error.light",
