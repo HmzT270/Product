@@ -2,9 +2,14 @@ import React, { useEffect, useState } from "react";
 import { getAllCategories } from "../services/categoryService";
 import { getAllBrands } from "../services/brandService";
 import { DataGrid } from "@mui/x-data-grid";
-import { Box, Typography, Grid, TextField, Autocomplete, InputAdornment } from "@mui/material";
+import { Box, Typography, Grid, TextField, Autocomplete, InputAdornment, Button } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import axios from "axios";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import myFont from "../fonts/OpenSansLight.js";
 
 const criticalRowClass = {
   backgroundColor: "error.light",
@@ -30,8 +35,8 @@ function ProductList() {
   const sortOptionsList = [
     { value: "serialnumber_asc", name: "Sıra No (Artan)" },
     { value: "serialnumber_desc", name: "Sıra No (Azalan)" },
-    { value: "name_asc", name: "Ürün Adı (A-Z)" },
-    { value: "name_desc", name: "Ürün Adı (Z-A)" },
+    { value: "name_asc", name: "Ad (A-Z)" },
+    { value: "name_desc", name: "Ad (Z-A)" },
     { value: "quantity_asc", name: "Stok (Artan)" },
     { value: "quantity_desc", name: "Stok (Azalan)" },
     { value: "category_asc", name: "Kategori (A-Z)" },
@@ -157,7 +162,7 @@ function ProductList() {
     },
     {
       field: "name",
-      headerName: "Ürün Adı",
+      headerName: "Ad",
       flex: 2,
       minWidth: 130,
       renderCell: (params) => (
@@ -237,7 +242,58 @@ function ProductList() {
     },
   ];
 
-  return (
+  
+  // Excel Export
+  const exportToExcel = (data) => {
+    const worksheet = XLSX.utils.json_to_sheet(
+      data.map((p) => ({
+        ID: p.productId,
+        "Ad": p.name,
+        Marka: p.brand || "Yok",
+        Kategori: p.category || "Yok",
+        Stok: p.quantity,
+        "Eklenme Tarihi": new Date(p.createdAt).toLocaleDateString(),
+      }))
+    );
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Ürünler");
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(blob, `urunler_${Date.now()}.xlsx`);
+  };
+
+// PDF Export (Türkçe karakter destekli)
+const exportToPDF = (data) => {
+  const doc = new jsPDF();
+
+  // Özel fontu ekle ve kullan
+  doc.addFileToVFS("OpenSans-Light.ttf", myFont);
+  doc.addFont("OpenSans-Light.ttf", "OpenSans", "normal");
+  doc.setFont("OpenSans");
+
+  doc.text("Ürün Dökümü", 14, 10);
+
+  const tableColumn = ["ID", "Ad", "Marka", "Kategori", "Stok", "Eklenme"];
+  const tableRows = data.map((p) => [
+    p.productId,
+    p.name,
+    p.brand || "Yok",
+    p.category || "Yok",
+    p.quantity,
+    new Date(p.createdAt).toLocaleDateString("tr-TR"), // Türkçe tarih formatı
+  ]);
+
+  autoTable(doc, {
+    head: [tableColumn],
+    body: tableRows,
+    startY: 20,
+    styles: { font: "OpenSans" }, // Tablo için font
+  });
+
+  doc.save(`urunler_${Date.now()}.pdf`);
+};
+
+return (
     <Box
       sx={{ width: "100%", maxWidth: "100vw", minHeight: "92vh", m: 0, p: 0 }}
     >
@@ -470,8 +526,8 @@ function ProductList() {
                 options={[
                   { value: "serialnumber_asc", name: "Sıra No (Artan)" },
                   { value: "serialnumber_desc", name: "Sıra No (Azalan)" },
-                  { value: "name_asc", name: "Ürün Adı (A-Z)" },
-                  { value: "name_desc", name: "Ürün Adı (Z-A)" },
+                  { value: "name_asc", name: "Ad (A-Z)" },
+                  { value: "name_desc", name: "Ad (Z-A)" },
                   { value: "quantity_asc", name: "Stok (Artan)" },
                   { value: "quantity_desc", name: "Stok (Azalan)" },
                   { value: "category_asc", name: "Kategori (A-Z)" },
@@ -556,7 +612,7 @@ function ProductList() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               sx={{
-                width: 180,
+                width: 150,
                 input: { color: "text.primary" },
                 label: { color: "text.primary" },
                 "& .MuiOutlinedInput-root": {
@@ -575,7 +631,7 @@ function ProductList() {
             {/* Kritik Seviye */}
             <Box display="flex" alignItems="center" gap={1}>
               <Typography color="text.primary" fontWeight={500}>
-                Kritik Stok Seviyesi:
+                Kritik Stok:
               </Typography>
               <TextField
                 type="number"
@@ -604,7 +660,9 @@ function ProductList() {
                 InputProps={{ inputProps: { min: 0 } }}
               />
             </Box>
-          </Box>
+          
+            </Box>
+
 
           <Box
             sx={{
@@ -656,6 +714,20 @@ function ProductList() {
               }}
             />
           </Box>
+
+      {/* Export Butonları (Tablo Altında) */}
+      <Box sx={{ display: "flex", gap: 2, mt: 1 }}>
+        <Button variant="contained" color="primary" onClick={() => exportToExcel(rows)}>
+          Excel İndir
+        </Button>
+        <Button variant="contained" color="secondary" onClick={() => exportToPDF(rows)}>
+          PDF İndir
+        </Button>
+        <Button variant="outlined" onClick={() => window.print()}>
+          Yazdır
+        </Button>
+      </Box>
+
         </Grid>
       </Grid>
     </Box>
