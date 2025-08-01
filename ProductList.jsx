@@ -2,7 +2,15 @@ import React, { useEffect, useState } from "react";
 import { getAllCategories } from "../services/categoryService";
 import { getAllBrands } from "../services/brandService";
 import { DataGrid } from "@mui/x-data-grid";
-import { Box, Typography, Grid, TextField, Autocomplete, InputAdornment, Button } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Grid,
+  TextField,
+  Autocomplete,
+  InputAdornment,
+  Button,
+} from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import axios from "axios";
 import * as XLSX from "xlsx";
@@ -219,16 +227,16 @@ function ProductList() {
       ),
     },
     {
-  field: "createdBy",
-  headerName: "Ekleyen",
-  flex: 1,
-  minWidth: 120,
-  renderCell: (params) => (
-    <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
-      {params.value || <i>Bilinmiyor</i>}
-    </Box>
-  ),
-},
+      field: "createdBy",
+      headerName: "Ekleyen",
+      flex: 1,
+      minWidth: 120,
+      renderCell: (params) => (
+        <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
+          {params.value || <i>Bilinmiyor</i>}
+        </Box>
+      ),
+    },
     {
       field: "createdAt",
       headerName: "Eklenme Tarihi",
@@ -242,13 +250,12 @@ function ProductList() {
     },
   ];
 
-  
   // Excel Export
   const exportToExcel = (data) => {
     const worksheet = XLSX.utils.json_to_sheet(
       data.map((p) => ({
         ID: p.productId,
-        "Ad": p.name,
+        Ad: p.name,
         Marka: p.brand || "Yok",
         Kategori: p.category || "Yok",
         Stok: p.quantity,
@@ -257,51 +264,59 @@ function ProductList() {
     );
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Ürünler");
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
     const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
     saveAs(blob, `urunler_${Date.now()}.xlsx`);
   };
 
-// PDF Export (Türkçe karakter destekli)
-const exportToPDF = (data) => {
-  const doc = new jsPDF();
+  // PDF Export (Türkçe karakter destekli)
+  const exportToPDF = (data) => {
+    const doc = new jsPDF();
 
-  // Özel fontu ekle ve kullan
-  doc.addFileToVFS("OpenSans-Light.ttf", myFont);
-  doc.addFont("OpenSans-Light.ttf", "OpenSans", "normal");
-  doc.setFont("OpenSans");
+    // Özel fontu ekle ve kullan
+    doc.addFileToVFS("OpenSans-Light.ttf", myFont);
+    doc.addFont("OpenSans-Light.ttf", "OpenSans", "normal");
+    doc.setFont("OpenSans");
 
-  doc.text("Ürün Dökümü", 14, 10);
+    doc.text("Ürün Dökümü", 14, 10);
 
-  const tableColumn = ["ID", "Ad", "Marka", "Kategori", "Stok", "Eklenme"];
-  const tableRows = data.map((p) => [
-    p.productId,
-    p.name,
-    p.brand || "Yok",
-    p.category || "Yok",
-    p.quantity,
-    new Date(p.createdAt).toLocaleDateString("tr-TR"), // Türkçe tarih formatı
-  ]);
+    const tableColumn = ["ID", "Ad", "Marka", "Kategori", "Stok", "Eklenme"];
+    const tableRows = data.map((p) => [
+      p.productId,
+      p.name,
+      p.brand || "Yok",
+      p.category || "Yok",
+      p.quantity,
+      new Date(p.createdAt).toLocaleDateString("tr-TR"), // Türkçe tarih formatı
+    ]);
 
-  autoTable(doc, {
-    head: [tableColumn],
-    body: tableRows,
-    startY: 20,
-    styles: { font: "OpenSans" }, // Tablo için font
-  });
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 20,
+      styles: { font: "OpenSans" }, // Tablo için font
+    });
 
-  doc.save(`urunler_${Date.now()}.pdf`);
-};
+    doc.save(`urunler_${Date.now()}.pdf`);
+  };
 
-return (
+  return (
     <Box
       sx={{ width: "100%", maxWidth: "100vw", minHeight: "92vh", m: 0, p: 0 }}
     >
       <style>{criticalRowStyle}</style>
 
       <Grid container spacing={0} sx={{ width: "100%", m: 0, p: 0 }}>
-        <Grid sx={{ width: "100%", mt: 5 }}>
-          <Typography variant="h5" gutterBottom color="text.primary" fontWeight={700}>
+        <Grid sx={{ width: "100%", mt: 2 }}>
+          <Typography
+            variant="h5"
+            gutterBottom
+            color="text.primary"
+            fontWeight={700}
+          >
             Ürün Listesi
           </Typography>
 
@@ -424,8 +439,6 @@ return (
                       style={{
                         fontSize: 15,
                       }}
-
-
                     >
                       {option.name}
                     </li>
@@ -510,7 +523,6 @@ return (
                       input: { color: "text.primary", fontSize: 15 },
                       label: { color: "text.primary", fontSize: 15 },
                       "& .MuiOutlinedInput-root": {
-
                         borderRadius: 1.5,
                         minHeight: 36,
                       },
@@ -575,11 +587,9 @@ return (
                       key={key ?? option.value} // key ekledik, yoksa option.value kullanılır
                       {...otherProps}
                       style={{
-
                         color: "text.primary",
                         fontSize: 15,
                       }}
-
                     >
                       {option.name}
                     </li>
@@ -594,7 +604,6 @@ return (
                       input: { color: "text.primary", fontSize: 15 },
                       label: { color: "text.primary", fontSize: 15 },
                       "& .MuiOutlinedInput-root": {
-
                         borderRadius: 1.5,
                         minHeight: 36,
                       },
@@ -653,16 +662,12 @@ return (
                   input: { color: "text.primary", textAlign: "center" },
                   "& .MuiOutlinedInput-root": {
                     "& fieldset": { borderColor: "#ccc" },
-
-
                   },
                 }}
                 InputProps={{ inputProps: { min: 0 } }}
               />
             </Box>
-          
-            </Box>
-
+          </Box>
 
           <Box
             sx={{
@@ -704,10 +709,10 @@ return (
                   fontSize: 18,
                   borderRight: "1px solid #4da7db33",
                 },
-                "& .MuiDataGrid-cell": { color: "text.primary", fontWeight: "bold" },
-
-
-
+                "& .MuiDataGrid-cell": {
+                  color: "text.primary",
+                  fontWeight: "bold",
+                },
                 "& .MuiTablePagination-root, & .MuiTablePagination-toolbar": {
                   color: "text.primary",
                 },
@@ -715,19 +720,26 @@ return (
             />
           </Box>
 
-      {/* Export Butonları (Tablo Altında) */}
-      <Box sx={{ display: "flex", gap: 2, mt: 1 }}>
-        <Button variant="contained" color="primary" onClick={() => exportToExcel(rows)}>
-          Excel İndir
-        </Button>
-        <Button variant="contained" color="secondary" onClick={() => exportToPDF(rows)}>
-          PDF İndir
-        </Button>
-        <Button variant="outlined" onClick={() => window.print()}>
-          Yazdır
-        </Button>
-      </Box>
-
+          {/* Export Butonları (Tablo Altında) */}
+          <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => exportToExcel(rows)}
+            >
+              Excel İndir
+            </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={() => exportToPDF(rows)}
+            >
+              PDF İndir
+            </Button>
+            <Button variant="outlined" onClick={() => window.print()}>
+              Yazdır
+            </Button>
+          </Box>
         </Grid>
       </Grid>
     </Box>
