@@ -10,6 +10,11 @@ import {
   Autocomplete,
   InputAdornment,
   Button,
+  Checkbox,
+  FormControlLabel,
+  IconButton,
+  Alert,
+  Fade,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import axios from "axios";
@@ -18,8 +23,8 @@ import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import myFont from "../fonts/OpenSansLight.js";
-import SimpleBar from "simplebar-react";
-import "simplebar-react/dist/simplebar.min.css";
+import StarIcon from "@mui/icons-material/Star";
+import StarBorderIcon from "@mui/icons-material/StarBorder";
 
 const criticalRowClass = {
   backgroundColor: "error.light",
@@ -40,6 +45,7 @@ function ProductList() {
     { value: "all", name: "Tüm Ürünler" },
     { value: "critical", name: "Kritik Stoktaki Ürünler" },
     { value: "outofstock", name: "Stokta Olmayan Ürünler" },
+    { value: "favorites", name: "Favori Ürünler" },
   ];
 
   const sortOptionsList = [
@@ -66,6 +72,12 @@ function ProductList() {
   const [criticalLevel, setCriticalLevel] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOption, setSortOption] = useState("serialnumber_asc");
+  const [showFavoritesIcon, setShowFavoritesIcon] = useState(false); // ⭐ Yıldız gösterimi
+  const [favoriteStatus, setFavoriteStatus] = useState({
+    success: null,
+    message: "",
+  });
+  const [showFavoriteStatus, setShowFavoriteStatus] = useState(false);
 
   const fetchInitialCriticalLevel = async () => {
     try {
@@ -88,17 +100,72 @@ function ProductList() {
     setBrands(data);
   };
 
-  const loadSortedProducts = async () => {
-    const [orderBy, direction] = sortOption.split("_");
-    try {
-      const res = await axios.get(
-        `http://localhost:5184/api/Product/Sorted?orderBy=${orderBy}&direction=${direction}`
-      );
-      setProducts(res.data);
-    } catch (err) {
-      console.error("Sıralı ürünler yüklenemedi:", err);
-    }
-  };
+const loadSortedProducts = async (userId) => {
+  const [orderBy, direction] = sortOption.split("_");
+  try {
+    const res = await axios.get(
+      `http://localhost:5184/api/Product/Sorted?orderBy=${orderBy}&direction=${direction}&userId=${userId}`
+    );
+    setProducts(res.data); // ⭐ Favoriler backend'ten gelen isFavorite ile geliyor
+  } catch (err) {
+    console.error("Sıralı ürünler yüklenemedi:", err);
+  }
+};
+
+
+  const currentUserId = localStorage.getItem("userId");
+
+useEffect(() => {
+  if (currentUserId) {
+    loadSortedProducts(currentUserId); // ⭐ her mount olduğunda userId ile yükle
+  }
+}, [sortOption, currentUserId]);
+// 🔹 Giriş yapan kullanıcının ID'si, gerçekte token veya contextten gelecek
+
+const toggleFavorite = async (id) => {
+  try {
+    // 1️⃣ UI'da anlık güncelle (optimistic update)
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.productId === id ? { ...p, isFavorite: !p.isFavorite } : p
+      )
+    );
+
+    // 2️⃣ Backend'e kullanıcı ID ile isteği at
+    const res = await axios.put(
+      `http://localhost:5184/api/Product/ToggleFavorite/${id}?userId=${currentUserId}`
+    );
+
+    // 3️⃣ Backend yanıtına göre uyarı mesajı
+    const isFav = res.data.isFavorite;
+    setFavoriteStatus({
+      success: true,
+      message: isFav
+        ? "Ürün favorilere eklendi ⭐"
+        : "Ürün favorilerden çıkarıldı ❌",
+    });
+    setShowFavoriteStatus(true);
+
+    // 4️⃣ Uyarı mesajı 1.5 saniye görünür, 3 saniyede kaybolur
+    setTimeout(() => setShowFavoriteStatus(false), 1500);
+    setTimeout(() => setFavoriteStatus({ success: null, message: "" }), 3000);
+
+    // 5️⃣ Backend'ten güncel favori durumunu çek
+    loadSortedProducts(currentUserId);
+  } catch (error) {
+    console.error("Favori durumu değiştirilemedi", error);
+
+    // ❌ Hata durumunda uyarı mesajı
+    setFavoriteStatus({
+      success: false,
+      message: "Favori işlemi başarısız!",
+    });
+    setShowFavoriteStatus(true);
+    setTimeout(() => setShowFavoriteStatus(false), 1500);
+    setTimeout(() => setFavoriteStatus({ success: null, message: "" }), 3000);
+  }
+};
+
 
   useEffect(() => {
     fetchInitialCriticalLevel();
@@ -117,7 +184,11 @@ function ProductList() {
           ? true
           : filterType === "critical"
           ? row.quantity <= criticalLevel
-          : row.quantity === 0;
+          : filterType === "outofstock"
+          ? row.quantity === 0
+          : filterType === "favorites"
+          ? row.isFavorite // ⭐ Favori ürünler
+          : true;
 
       const matchesSearch = row.name
         .toLowerCase()
@@ -176,11 +247,32 @@ function ProductList() {
       flex: 2,
       minWidth: 130,
       renderCell: (params) => (
-        <Box sx={{ color: "text.primary", fontWeight: "bold" }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            color: "text.primary",
+            fontWeight: "bold",
+          }}
+        >
           {params.value}
+          {showFavoritesIcon && (
+            <IconButton
+              size="small"
+              onClick={() => toggleFavorite(params.row.productId)}
+            >
+              {params.row.isFavorite ? (
+                <StarIcon style={{ color: "gold", fontSize: 20 }} />
+              ) : (
+                <StarBorderIcon style={{ fontSize: 20 }} />
+              )}
+            </IconButton>
+          )}
         </Box>
       ),
     },
+
     {
       field: "description",
       headerName: "Açıklama",
@@ -467,11 +559,7 @@ function ProductList() {
             {/* Filtre */}
             <div style={{ minWidth: 170, maxWidth: 210 }}>
               <Autocomplete
-                options={[
-                  { value: "all", name: "Tüm Ürünler" },
-                  { value: "critical", name: "Kritik Stoktaki Ürünler" },
-                  { value: "outofstock", name: "Stokta Olmayan Ürünler" },
-                ]}
+                options={productFilters} // ⭐ Sabit diziyi kaldırdık
                 getOptionLabel={(option) => option.name}
                 value={
                   productFilters.find((opt) => opt.value === filterType) || null
@@ -669,6 +757,16 @@ function ProductList() {
                 InputProps={{ inputProps: { min: 0 } }}
               />
             </Box>
+
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={showFavoritesIcon}
+                  onChange={(e) => setShowFavoritesIcon(e.target.checked)}
+                />
+              }
+              label="Yıldızları Göster"
+            />
           </Box>
 
           <Box
@@ -704,7 +802,7 @@ function ProductList() {
                 "& .MuiDataGrid-columnHeaders": {
                   backgroundColor: "background.paper",
                 },
-                "& .MuiDataGrid-columnHeader": {
+                "& .MuiDataGrid-columnHeader, .MuiDataGrid-footerContainer": {
                   backgroundColor: "background.paper",
                   color: "text.primary",
                   fontWeight: "bold",
@@ -723,24 +821,48 @@ function ProductList() {
           </Box>
 
           {/* Export Butonları (Tablo Altında) */}
-          <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => exportToExcel(rows)}
-            >
-              Excel İndir
-            </Button>
-            <Button
-              variant="contained"
-              color="secondary"
-              onClick={() => exportToPDF(rows)}
-            >
-              PDF İndir
-            </Button>
-            <Button variant="outlined" onClick={() => window.print()}>
-              Yazdır
-            </Button>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between", // Butonlar solda, uyarı sağda
+              alignItems: "center", // Dikey hizalama
+              gap: 2,
+              mt: 2,
+            }}
+          >
+            {/* Sol tarafta butonlar */}
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => exportToExcel(rows)}
+              >
+                Excel İndir
+              </Button>
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => exportToPDF(rows)}
+              >
+                PDF İndir
+              </Button>
+            </Box>
+
+            {/* Sağ tarafta Favori Uyarı Mesajı */}
+            <Fade in={showFavoriteStatus} timeout={1500}>
+              <Alert
+                severity={favoriteStatus.success ? "success" : "error"}
+                sx={{
+                  maxWidth: 300,
+                  height: 36, // Buton yüksekliğiyle aynı
+                  display: "flex",
+                  alignItems: "center",
+                  mb: 0, // Alt boşluk olmasın
+                }}
+              >
+                {favoriteStatus.message}
+              </Alert>
+            </Fade>
           </Box>
         </Grid>
       </Grid>
