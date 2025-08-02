@@ -100,72 +100,71 @@ function ProductList() {
     setBrands(data);
   };
 
-const loadSortedProducts = async (userId) => {
-  const [orderBy, direction] = sortOption.split("_");
-  try {
-    const res = await axios.get(
-      `http://localhost:5184/api/Product/Sorted?orderBy=${orderBy}&direction=${direction}&userId=${userId}`
-    );
-    setProducts(res.data); // ⭐ Favoriler backend'ten gelen isFavorite ile geliyor
-  } catch (err) {
-    console.error("Sıralı ürünler yüklenemedi:", err);
-  }
-};
+  const loadSortedProducts = async (username) => {
+    const [orderBy, direction] = sortOption.split("_");
+    try {
+      const res = await axios.get(
+        `http://localhost:5184/api/Product/Sorted?orderBy=${orderBy}&direction=${direction}&userId=${username}`
+      );
+      setProducts(res.data);
+    } catch (err) {
+      console.error("Sıralı ürünler yüklenemedi:", err);
+    }
+  };
 
+  const currentUsername = localStorage.getItem("username"); // Kullanıcı adı
 
-  const currentUserId = localStorage.getItem("userId");
+  useEffect(() => {
+    if (currentUsername) {
+      console.log("Favoriler bu kullanıcıya göre yüklenecek:", currentUsername);
+      loadSortedProducts(currentUsername);
+    }
+  }, [sortOption, currentUsername]);
 
-useEffect(() => {
-  if (currentUserId) {
-    loadSortedProducts(currentUserId); // ⭐ her mount olduğunda userId ile yükle
-  }
-}, [sortOption, currentUserId]);
-// 🔹 Giriş yapan kullanıcının ID'si, gerçekte token veya contextten gelecek
+  // 🔹 Giriş yapan kullanıcının ID'si, gerçekte token veya contextten gelecek
 
-const toggleFavorite = async (id) => {
-  try {
-    // 1️⃣ UI'da anlık güncelle (optimistic update)
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.productId === id ? { ...p, isFavorite: !p.isFavorite } : p
-      )
-    );
+  const toggleFavorite = async (id) => {
+    try {
+      console.log("ToggleFavorite gönderilen user:", currentUsername);
 
-    // 2️⃣ Backend'e kullanıcı ID ile isteği at
-    const res = await axios.put(
-      `http://localhost:5184/api/Product/ToggleFavorite/${id}?userId=${currentUserId}`
-    );
+      // UI'ı anlık güncelle
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.productId === id ? { ...p, isFavorite: !p.isFavorite } : p
+        )
+      );
 
-    // 3️⃣ Backend yanıtına göre uyarı mesajı
-    const isFav = res.data.isFavorite;
-    setFavoriteStatus({
-      success: true,
-      message: isFav
-        ? "Ürün favorilere eklendi ⭐"
-        : "Ürün favorilerden çıkarıldı ❌",
-    });
-    setShowFavoriteStatus(true);
+      // Backend'e username gönder
+      const res = await axios.put(
+        `http://localhost:5184/api/Product/ToggleFavorite/${id}?userId=${currentUsername}`
+      );
 
-    // 4️⃣ Uyarı mesajı 1.5 saniye görünür, 3 saniyede kaybolur
-    setTimeout(() => setShowFavoriteStatus(false), 1500);
-    setTimeout(() => setFavoriteStatus({ success: null, message: "" }), 3000);
+      // Uyarı mesajı
+      const isFav = res.data.isFavorite;
+      setFavoriteStatus({
+        success: true,
+        message: isFav
+          ? "Ürün favorilere eklendi ⭐"
+          : "Ürün favorilerden çıkarıldı ❌",
+      });
+      setShowFavoriteStatus(true);
 
-    // 5️⃣ Backend'ten güncel favori durumunu çek
-    loadSortedProducts(currentUserId);
-  } catch (error) {
-    console.error("Favori durumu değiştirilemedi", error);
+      setTimeout(() => setShowFavoriteStatus(false), 1500);
+      setTimeout(() => setFavoriteStatus({ success: null, message: "" }), 3000);
 
-    // ❌ Hata durumunda uyarı mesajı
-    setFavoriteStatus({
-      success: false,
-      message: "Favori işlemi başarısız!",
-    });
-    setShowFavoriteStatus(true);
-    setTimeout(() => setShowFavoriteStatus(false), 1500);
-    setTimeout(() => setFavoriteStatus({ success: null, message: "" }), 3000);
-  }
-};
-
+      // Listeyi tekrar yükle
+      loadSortedProducts(currentUsername);
+    } catch (error) {
+      console.error("Favori durumu değiştirilemedi", error);
+      setFavoriteStatus({
+        success: false,
+        message: "Favori işlemi başarısız!",
+      });
+      setShowFavoriteStatus(true);
+      setTimeout(() => setShowFavoriteStatus(false), 1500);
+      setTimeout(() => setFavoriteStatus({ success: null, message: "" }), 3000);
+    }
+  };
 
   useEffect(() => {
     fetchInitialCriticalLevel();
@@ -824,8 +823,8 @@ const toggleFavorite = async (id) => {
           <Box
             sx={{
               display: "flex",
-              justifyContent: "space-between", // Butonlar solda, uyarı sağda
-              alignItems: "center", // Dikey hizalama
+              justifyContent: "space-between",
+              alignItems: "center",
               gap: 2,
               mt: 2,
             }}
@@ -857,7 +856,7 @@ const toggleFavorite = async (id) => {
                   height: 36, // Buton yüksekliğiyle aynı
                   display: "flex",
                   alignItems: "center",
-                  mb: 0, // Alt boşluk olmasın
+                  mb: 0,
                 }}
               >
                 {favoriteStatus.message}
